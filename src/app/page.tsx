@@ -17,6 +17,8 @@ import { TransactionFilters } from '@/components/filter/TransactionFilters'
 import { FinancialReports } from '@/components/report/FinancialReports'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { useAuth } from '@/hooks/useAuth'
+import { StatsCards } from '@/components/dashboard/StatsCards'
+import { ChartsSection } from '@/components/dashboard/ChartsSection'
 
 interface Transaction {
   id: string
@@ -343,32 +345,21 @@ export default function Home() {
     checkAuthStatus()
   }
 
-  // Show loading while checking auth
-  if (authLoading) {
+  // Auth & Loading states
+  if (authLoading || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-primary text-xl">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <div className="text-foreground text-lg">Loading app...</div>
       </div>
     )
   }
 
-  // Show setup screen if PIN is not configured
   if (!isSetup) {
     return <SetupPIN onComplete={handleSetupComplete} />
   }
 
-  // Show lock screen if not authenticated
   if (!isAuthenticated) {
     return <LockScreen onUnlock={handleUnlock} storedPin={getStoredPin()} />
-  }
-
-  // Show loading while fetching data
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-primary text-xl">Memuat data...</div>
-      </div>
-    )
   }
 
   return (
@@ -525,150 +516,18 @@ export default function Home() {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8 pb-24">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="bg-card/80 backdrop-blur-sm border border-primary/30 shadow-lg shadow-primary/10 overflow-hidden group hover:border-primary/50 transition-all duration-300 dark:from-slate-900/80 dark:to-slate-800/80 dark:border-cyan-500/30 dark:shadow-cyan-500/10 dark:hover:border-cyan-400/50">
-            <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity dark:from-cyan-500/5 dark:to-purple-500/5"></div>
-            <CardHeader className="relative">
-              <CardTitle className="text-muted-foreground text-sm font-medium flex items-center">
-                <Wallet className="mr-2 h-4 w-4 text-primary dark:text-cyan-400" />
-                Balance
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="relative">
-              <div className="text-4xl font-bold bg-gradient-to-r from-cyan-500 to-purple-500 bg-clip-text text-transparent dark:from-cyan-400 dark:to-purple-400">
-                Rp {filteredBalance.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-              </div>
-              {filteredTransactions.length !== transactions.length && (
-                <p className="text-xs text-muted-foreground mt-2">{filteredTransactions.length} dari {transactions.length} transaksi ditampilkan</p>
-              )}
-            </CardContent>
-          </Card>
+        <StatsCards 
+          balance={filteredBalance}
+          totalIncome={filteredTotalIncome}
+          totalExpense={filteredTotalExpense}
+          filteredCount={filteredTransactions.length}
+          totalCount={transactions.length}
+        />
 
-          <Card className="bg-card/80 backdrop-blur-sm border border-green-500/30 shadow-lg shadow-green-500/10 overflow-hidden group hover:border-green-400/50 transition-all duration-300 dark:from-slate-900/80 dark:to-slate-800/80">
-            <div className="absolute inset-0 bg-gradient-to-r from-green-500/5 to-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-            <CardHeader className="relative">
-              <CardTitle className="text-muted-foreground text-sm font-medium flex items-center">
-                <TrendingUp className="mr-2 h-4 w-4 text-green-500" />
-                Total Income
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="relative">
-              <div className="text-3xl font-bold text-green-600 dark:text-green-400">
-                +Rp {filteredTotalIncome.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-card/80 backdrop-blur-sm border border-red-500/30 shadow-lg shadow-red-500/10 overflow-hidden group hover:border-red-400/50 transition-all duration-300 dark:from-slate-900/80 dark:to-slate-800/80">
-            <div className="absolute inset-0 bg-gradient-to-r from-red-500/5 to-orange-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-            <CardHeader className="relative">
-              <CardTitle className="text-muted-foreground text-sm font-medium flex items-center">
-                <TrendingDown className="mr-2 h-4 w-4 text-red-500" />
-                Total Expenses
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="relative">
-              <div className="text-3xl font-bold text-red-600 dark:text-red-400">
-                -Rp {filteredTotalExpense.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Charts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {/* Bar Chart - Monthly Income vs Expense */}
-          <Card className="bg-card/80 backdrop-blur-sm border border-primary/30 shadow-lg dark:from-slate-900/80 dark:to-slate-800/80 dark:border-cyan-500/30">
-            <CardHeader>
-              <CardTitle className="text-xl bg-gradient-to-r from-cyan-500 to-purple-500 bg-clip-text text-transparent flex items-center dark:from-cyan-400 dark:to-purple-400">
-                <BarChart3 className="mr-2 h-5 w-5" />
-                Income vs Expense (Last 6 Months)
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {chartData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(34, 211, 238, 0.1)" />
-                    <XAxis 
-                      dataKey="month" 
-                      tick={{ fill: '#94a3b8', fontSize: 12 }}
-                      stroke="rgba(148, 163, 184, 0.2)"
-                    />
-                    <YAxis 
-                      tick={{ fill: '#94a3b8', fontSize: 12 }}
-                      stroke="rgba(148, 163, 184, 0.2)"
-                    />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'rgba(15, 23, 42, 0.9)', 
-                        border: '1px solid rgba(34, 211, 238, 0.3)',
-                        borderRadius: '8px',
-                        color: '#fff'
-                      }}
-                      formatter={(value: number) => [`Rp ${value.toLocaleString('id-ID')}`, '']}
-                    />
-                    <Bar dataKey="income" fill="#22c55e" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="expense" fill="#ef4444" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-[250px] flex items-center justify-center text-muted-foreground">
-                  <p>No data available</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Pie Chart - Expense by Category */}
-          <Card className="bg-card/80 backdrop-blur-sm border border-primary/30 shadow-lg dark:from-slate-900/80 dark:to-slate-800/80 dark:border-purple-500/30">
-            <CardHeader>
-              <CardTitle className="text-xl bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent flex items-center dark:from-purple-400 dark:to-pink-400">
-                <PieChart className="mr-2 h-5 w-5" />
-                Top Expense Categories
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {categoryData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={250}>
-                  <RechartsPieChart>
-                    <Pie
-                      data={categoryData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={90}
-                      paddingAngle={2}
-                      dataKey="value"
-                    >
-                      {categoryData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'rgba(15, 23, 42, 0.9)', 
-                        border: '1px solid rgba(168, 85, 247, 0.3)',
-                        borderRadius: '8px',
-                        color: '#fff'
-                      }}
-                      formatter={(value: number) => [`Rp ${value.toLocaleString('id-ID')}`, '']}
-                    />
-                    <Legend 
-                      wrapperStyle={{ color: '#94a3b8', fontSize: '12px' }}
-                      iconType="circle"
-                    />
-                  </RechartsPieChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-[250px] flex items-center justify-center text-muted-foreground">
-                  <p>No expense data available</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+        <ChartsSection 
+          chartData={chartData}
+          categoryData={categoryData}
+        />
 
         {/* Transactions List */}
         <TransactionFilters
